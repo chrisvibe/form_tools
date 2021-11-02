@@ -6,12 +6,6 @@ from cli_user_form import form_to_df
 from form_templates import overview_template
 from form_templates import manifest_template
 
-#dependencies:
-#pip3 install pandas
-#pip3 install XlsxWriter
-#pip3 install odfpy
-#pip3 install styleframe
-
 # Read event file
 #excel_file = 'demo_sommerkurs.ods'
 #overview_df = pd.read_excel(excel_file, sheet_field='Oversikt')
