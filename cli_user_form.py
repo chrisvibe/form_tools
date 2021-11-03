@@ -17,7 +17,7 @@ def get_response(form, i):
             hint = 'f.eks: ' + example_datetime
             response = input('{} - [{}] ({}):\n~ '.format(i, field['name'], hint))
         else:
-            response = input('{} - [{}]:\n~ '.format(i, field['name']))
+            response = input('{} - [{}] ({}):\n~ '.format(i, field['name'], field['fmt']))
         if response:
             break
         else:
@@ -52,7 +52,7 @@ def clean_string(string, max_width=1000):
         # Make sentences capitalized and remove excessive spaces
         new_string = ''
         substring = ''
-        for char in string:
+        for char in string:  # TODO avoid appending approach?
             substring += char
             if char in sentence_enders:
                 substring = re.sub(r'^[ \t]+|[ \t]+$', '', substring)
@@ -161,6 +161,22 @@ Alle deler av skjemaet er utfylt!
         return e.index
 
 
+def write_checkpoint(form, file='.temp'):
+    with open(file, 'w') as file:
+        for i in range(len(form)):
+            section = form[i]
+            file.write("{} - [{}] ({}):\n~ {}\n".format(i, section['name'], section['fmt'].__name__, section['entry']))
+
+
+def read_checkpoint(form, file='.temp'):
+    with open(file, 'r') as file:
+        for i in range(len(form)):
+            section = form[i]
+            _ = file.readline()
+            section['entry'] = file.readline()[2:]
+    return form
+
+
 def fill_form(form, template_form, user_input=True, max_width=100):
     i, n = field_navigation_helper(form, 0), len(form)
     while i < n:
@@ -175,6 +191,7 @@ def fill_form(form, template_form, user_input=True, max_width=100):
         if jump:
             i = int(jump.group()[1:])
         elif response == 'f':
+            write_checkpoint(form)  # TODO add checkpoint name
             break
         elif response == 'q':
             sys.exit()
@@ -200,14 +217,8 @@ def get_empty_form(template_form):
 
 def walkthrough_form(form, template_form, user_input=None, max_width=100):
     hello()
+    # TODO add checkpoint start
     form = fill_form(form, template_form, user_input=user_input, max_width=max_width)
-    while True:
-        try:
-            form = convert_form_datatypes(form)
-            break
-        except FormTypeException as e:
-            print(e.field_hint)
-            form = fill_form(form, template_form, user_input=True, max_width=max_width)
     goodbye(form)
     return form
 
@@ -244,5 +255,11 @@ if __name__ == '__main__':
     from form_templates import *
     #form_to_df(overview_template, user_input=False)
     #form_to_df(manifest_template, iterated_form=True, user_input=False)
-    form_to_df(overview_template)
+
+    #form_to_df(overview_template)
     #form_to_df(manifest_template, iterated_form=True)
+
+    # checkpoints
+    #form = get_empty_form(overview_template)
+    #form = fill_form(form, None, user_input=True)
+    #print_form(read_checkpoint(form))

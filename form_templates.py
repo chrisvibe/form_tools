@@ -1,6 +1,6 @@
 from pandas import Timestamp
 '''
-Tested field types:
+# Supported field types:
 - numeric fields = [float, int]
 - time fields = [Timestamp]
 - normal fields = [str]
