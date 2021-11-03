@@ -1,10 +1,10 @@
-import openpyxl
 import pandas as pd
 from styleframe import Styler, utils, StyleFrame
-from cli_user_form import form_to_df
 
-from form_templates import overview_template
+from cli_user_form import form_to_df
 from form_templates import manifest_template
+from form_templates import overview_template
+
 
 # Read event file
 #excel_file = 'demo_sommerkurs.ods'
@@ -109,6 +109,7 @@ sf2.to_excel(ew, index=False, sheet_name='Manifest')
 # TODO
 # apply autofilter
 # https://xlsxwriter.readthedocs.io/example_pandas_autofilter.html
+#import openpyxl
 #sheet = ew.sheets['Manifest']
 #from openpyxl.worksheet.filters import FilterColumn
 #filters = [FilterColumn(i) for i in range(len(sf2.columns))]

@@ -1,11 +1,12 @@
 import copy
-from datetime import datetime
 import re
 import sys
-from itertools import chain
-import dateutil.parser
-import pandas as pd
 import textwrap
+from datetime import datetime
+from itertools import chain
+from numpy import nan
+
+import pandas as pd
 
 
 def get_response(form, i):
@@ -17,7 +18,7 @@ def get_response(form, i):
             hint = 'f.eks: ' + example_datetime
             response = input('{} - [{}] ({}):\n~ '.format(i, field['name'], hint))
         else:
-            response = input('{} - [{}] ({}):\n~ '.format(i, field['name'], field['fmt']))
+            response = input('{} - [{}]:\n~ '.format(i, field['name']))
         if response:
             break
         else:
@@ -29,7 +30,9 @@ def get_response(form, i):
 def print_form(form):
     form_str = ''
     for i in range(len(form)):
-        form_str += '{} - [{}]:\n~ {}\n'.format(i, form[i]['name'], form[i]['entry'])
+        field = form[i]
+        entry = 'N/A' if field['entry'] == nan else field['entry']
+        form_str += '{} - [{}]:\n~ {}\n'.format(i, field['name'], entry)
     pretty_print(form_str[:-1])
 
 
@@ -139,6 +142,10 @@ def convert_form_datatypes(form):
                     example_int = 7
                     handle_exception(i, field, example_int)
             field['entry'] = formatted_response
+        elif field['fmt'] == float:
+            field['entry'] = nan
+        elif field['fmt'] == int: # Cant be np.nan as its a float
+            field['entry'] = 0
     return form
 
 
@@ -161,7 +168,7 @@ Alle deler av skjemaet er utfylt!
         return e.index
 
 
-def write_checkpoint(form, file='.temp'):
+def write_checkpoint(form, file='.temp'): # TODO use print_form somehow
     with open(file, 'w') as file:
         for i in range(len(form)):
             section = form[i]
@@ -235,10 +242,10 @@ def form_to_df(template_form, iterated_form=False, user_input=True, max_width=10
             entry = {field['name']: field['entry'] for field in form}
             entries.append(entry)
             if user_input:
-                promt = '''
-"f" hvis du er ferding med å fylle ut rader
-alt annet for å legge til flere rader\n'''
-                response = input(pretty_print(promt, print_=False))
+                promt = '''\
+"f"     - hvis du er ferding med å fylle ut rader
+"ENTER" - for å legge til flere rader'''
+                response = input(pretty_print(promt, print_=False) + '\n')
             else:
                 df = pd.DataFrame(entries)
                 return df.astype(dtypes)

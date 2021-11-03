@@ -1,7 +1,7 @@
 from pandas import Timestamp
 '''
 # Supported field types:
-- numeric fields = [float, int]
+- numeric fields = [float, int] (for now int N/A = 0)
 - time fields = [Timestamp]
 - normal fields = [str]
 '''
