@@ -31,7 +31,7 @@ def print_form(form):
     form_str = ''
     for i in range(len(form)):
         field = form[i]
-        entry = 'N/A' if field['entry'] == nan else field['entry']
+        entry = clean_string('N/A') if field['entry'] == nan else field['entry']
         form_str += '{} - [{}]:\n~ {}\n'.format(i, field['name'], entry)
     pretty_print(form_str[:-1])
 
@@ -260,10 +260,11 @@ def form_to_df(template_form, iterated_form=False, user_input=True, max_width=10
 
 if __name__ == '__main__':
     from form_templates import *
-    #form_to_df(overview_template, user_input=False)
+    #form_to_df(overview_template, user_input=False
     #form_to_df(manifest_template, iterated_form=True, user_input=False)
 
-    #form_to_df(overview_template)
+    df = form_to_df(overview_template)
+    print(df)
     #form_to_df(manifest_template, iterated_form=True)
 
     # checkpoints
