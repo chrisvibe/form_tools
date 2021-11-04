@@ -1,4 +1,4 @@
-# pk_data
+# form_tools 
 
 # Verktøy for:
 * manual innsamling av data via skjema
@@ -7,7 +7,7 @@
 # Data flow
 1. user_input.py samler data i et skjema fra en mal i form_templates.py
 2. dataen er samlet i en pandas dataframe
-3. Andre programmer bruker dataen f.eks pk_event_logger.py som lager sammendrag i excel.
+3. Andre programmer bruker dataen f.eks user_form_to_excel.py som lager sammendrag i excel.
 
 # Install
 pip3 install -r requirements.txt
@@ -20,7 +20,7 @@ python3 cli_user_form.py
 2. Skjemaet er nå tilgjengelig som et pandas dataframe
 
 # Demo2 - automatisk excel ark 
-python3 pk_event_logger.py
+python3 user_form_to_excel.py
 1. Følg instruksene for å fylle et skjema om et arrangement.
 2. Fyll et nytt skjema med oversikt over deltakere (1 skjema per deltaker)
 3. Sjekk resultatet i demo_sommerkurs.xlsx

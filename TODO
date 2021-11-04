@@ -1,2 +1,7 @@
+# TODO
 Gjør det klart hvilket skjema so bir fylt ut
 Info on iterert skjema i hello
+
+# TODO for executable
+pip install pyinstaller
+conda update python from 3.10 with new version (not supported atm)

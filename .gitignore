@@ -131,4 +131,4 @@ dmypy.json
 # Spreadsheets and checkpoints
 .xlsx
 .ods
-.temp
+.checkpoint

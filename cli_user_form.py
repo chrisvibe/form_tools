@@ -4,9 +4,10 @@ import sys
 import textwrap
 from datetime import datetime
 from itertools import chain
-from numpy import nan
 
 import pandas as pd
+
+from form_templates import *
 
 
 def get_response(form, i):
@@ -22,18 +23,19 @@ def get_response(form, i):
         if response:
             break
         else:
-            response = 'N/A'
+            response = NA
         n_tries -= 1
     return response
 
 
-def print_form(form):
+def print_form(form, print_=True):
     form_str = ''
     for i in range(len(form)):
         field = form[i]
-        entry = clean_string('N/A') if field['entry'] == nan else field['entry']
+        empty = field['entry'] in [NAN, NO_ENTRY]
+        entry = '' if empty else field['entry']
         form_str += '{} - [{}]:\n~ {}\n'.format(i, field['name'], entry)
-    pretty_print(form_str[:-1])
+    return pretty_print(form_str[:-1], print_=print_)
 
 
 def remove_spaces(old_string, sentence_enders):
@@ -76,14 +78,18 @@ def clean_string(string, max_width=1000):
 def hello():
     intro = '''\
 Følg instruksene nøye for å fylle ut skjemaet.
-"f" - ferdig: med utfylling (eller rad i større skjema)
+"f" - ferdig: med utfylling av skjema/rad, og lager checkpoint fil
 "g" - gå: til en del i skjemaet (feks del 3 "g3")
 "q" - quit: lukk programmet
 "e" - eksempel: vis et utfylt eksempel
 "s" - status: vis det vi har fylt ut
-"h" - hjelp: vis disse instruksene'''
+"r" - read: les en checkpoint fil
+"w" - write: skriv en checkpoint fil
+"h" - hjelp: vis disse instruksene
+"ENTER"x2 for å la et felt være blankt'''
     pretty_print(intro)
     pretty_print('Fyll ut skjemaet')
+
 
 def goodbye(form):
     print_form(form)
@@ -121,7 +127,7 @@ Feil format i felt {} -> [{}]
 def convert_form_datatypes(form):
     for i in range(len(form)):
         field = form[i]
-        if str(field['entry']).upper() != 'N/A':
+        if str(field['entry']).upper() != NO_ENTRY:
             formatted_response = field['entry']
             if field['fmt'] == pd.Timestamp:
                 try:
@@ -143,18 +149,20 @@ def convert_form_datatypes(form):
                     handle_exception(i, field, example_int)
             field['entry'] = formatted_response
         elif field['fmt'] == float:
-            field['entry'] = nan
-        elif field['fmt'] == int: # Cant be np.nan as its a float
-            field['entry'] = 0
+            field['entry'] = NAN
+        elif field['fmt'] == int:  # Cant be np.nan as its a float
+            field['entry'] = field['default']
     return form
 
 
-def field_navigation_helper(form, current_index):
-    rotated_range = chain(range(current_index, len(form)),  range(current_index))
-    for i in rotated_range:
-        field = form[i]
-        if field['entry'] == '':
-            return i
+def field_navigation_helper(form, current_index, check_empty=True):
+    error_flag = False
+    if check_empty:
+        rotated_range = chain(range(current_index, len(form)),  range(current_index))
+        for i in rotated_range:
+            field = form[i]
+            if field['entry'] is NO_ENTRY:
+                return i, error_flag
     try:
         convert_form_datatypes(form)
         nav_msg = '''\
@@ -162,21 +170,22 @@ Alle deler av skjemaet er utfylt!
 "f" - ferdig: med utfylling (eller rad i større skjema)
 "s" - status: vis det vi har fylt ut'''
         pretty_print(nav_msg)
-        return current_index
+        return current_index, error_flag
     except FormTypeException as e:
+        error_flag = True
         print(e.field_hint)
-        return e.index
+        return e.index, error_flag
 
 
-def write_checkpoint(form, file='.temp'): # TODO use print_form somehow
+def write_checkpoint(form, file='.checkpoint'):
     with open(file, 'w') as file:
-        for i in range(len(form)):
-            section = form[i]
-            file.write("{} - [{}] ({}):\n~ {}\n".format(i, section['name'], section['fmt'].__name__, section['entry']))
+        file.write(print_form(form, print_=False))
 
 
-def read_checkpoint(form, file='.temp'):
+def read_checkpoint(form, file='.checkpoint'):
     with open(file, 'r') as file:
+        _ = file.readline()
+        _ = file.readline()
         for i in range(len(form)):
             section = form[i]
             _ = file.readline()
@@ -185,21 +194,23 @@ def read_checkpoint(form, file='.temp'):
 
 
 def fill_form(form, template_form, user_input=True, max_width=100):
-    i, n = field_navigation_helper(form, 0), len(form)
+    i, _ = field_navigation_helper(form, 0)
+    n = len(form)
     while i < n:
         field = form[i]
         if user_input:
             response = get_response(form, i)
         else:  # direct input from template
-            if i + 1 == n:  # break loop
+            if i + 1 == n:  # break loop (flush first)
                 n = i
             response = template_form[i]['entry']
         jump = re.search(r'^g\d', response)
         if jump:
             i = int(jump.group()[1:])
         elif response == 'f':
-            write_checkpoint(form)  # TODO add checkpoint name
-            break
+            i, error = field_navigation_helper(form, i, check_empty=False)
+            if not error:
+                break
         elif response == 'q':
             sys.exit()
         elif response == 'e':
@@ -208,23 +219,26 @@ def fill_form(form, template_form, user_input=True, max_width=100):
             hello()
         elif response == 's':
             print_form(form)
+        elif response == 'r':
+            form = read_checkpoint(form)
+        elif response == 'w':
+            write_checkpoint(form)
         else:
             response = clean_string(response, max_width=max_width)
             field['entry'] = response
-            i = field_navigation_helper(form, i)
+            i, _ = field_navigation_helper(form, i)
     return form
 
 
 def get_empty_form(template_form):
     form = copy.deepcopy(template_form)
     for field in form:
-        field['entry'] = ''
+        field['entry'] = NO_ENTRY
     return form
 
 
 def walkthrough_form(form, template_form, user_input=None, max_width=100):
     hello()
-    # TODO add checkpoint start
     form = fill_form(form, template_form, user_input=user_input, max_width=max_width)
     goodbye(form)
     return form
@@ -259,15 +273,14 @@ def form_to_df(template_form, iterated_form=False, user_input=True, max_width=10
 
 
 if __name__ == '__main__':
-    from form_templates import *
-    #form_to_df(overview_template, user_input=False
+    # demo 1
+    form_to_df(overview_template)
+
+    # Run with template as user input
+    #form_to_df(overview_template, user_input=False)
     #form_to_df(manifest_template, iterated_form=True, user_input=False)
 
-    df = form_to_df(overview_template)
-    print(df)
-    #form_to_df(manifest_template, iterated_form=True)
-
-    # checkpoints
+    # Test checkpoints (manually)
     #form = get_empty_form(overview_template)
     #form = fill_form(form, None, user_input=True)
     #print_form(read_checkpoint(form))
